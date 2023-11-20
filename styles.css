@@ -70,6 +70,14 @@ main section table tr td {
     border-left: 5px solid #6d28d9;
 }
 
+.block {
+    display: block;
+}
+
+.hidden {
+    display: none;
+}
+
 .btn:hover {
     filter: brightness(0.75);
     cursor: pointer;
