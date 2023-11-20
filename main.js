@@ -1,56 +1,45 @@
+const unit = 30;
+const colorDictionary = {
+    r: 'red',
+    g: 'green',
+    b: 'blue',
+    y: 'yellow',
+}
+const shapesDictionary = {
+    square: 'square',
+    line: 'line',
+    l: 'l',
+    t: 't',
+};
+const formats = {
+    square: [
+        ['b', 'b'],
+        ['b', 'b'],
+    ],
+    line: [
+        ['r', 'r', 'r', 'r'],
+    ],
+    l: [
+        ['y', ''],
+        ['y', ''],
+        ['y', 'y'],
+    ],
+    t: [
+        ['g', 'g', 'g'],
+        ['', 'g', ''],
+    ],
+}
+let board = [];
+const nextShapes = [];
+
 
 class Block {
-    formats = {
-        square: {
-            color: 'blue',
-            shape: [
-                [1, 1],
-                [1, 1],
-            ],
-        },
-        line: {
-            color: 'red',
-            shape: [
-                [1, 1, 1, 1],
-            ],
-        },
-        l: {
-            color: 'green',
-            shape: [
-                [1, 0],
-                [1, 0],
-                [1, 1],
-            ],
-        },
-        t: {
-            color: 'orange',
-            shape: [
-                [1, 1, 1],
-                [0, 1, 0],
-            ],
-        },
-    }
-
-    drawBlock(color, ctx, x, y) {
+    draw(color, ctx, x, y) {
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, 30, 30);
+        ctx.fillRect(x, y, unit, unit);
 
         ctx.fillStyle = 'black';
-        ctx.strokeRect(x, y, 30, 30);
-    }
-
-    drawShape(type, ctx, x, y) {
-        const format = this.formats[type];
-
-        ctx.fillStyle = format.color;
-
-        for (let i = 0; i < format.shape.length; i++) {
-            for (let j = 0; j < format.shape[i].length; j++) {
-                if (format.shape[i][j]) {
-                    this.drawBlock(format.color, ctx, x + j * 30, y + i * 30);
-                }
-            }
-        }
+        ctx.strokeRect(x, y, unit, unit);
     }
 }
 
@@ -59,8 +48,7 @@ class Game {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
 
-        this.x = 0;
-        this.speed = 5;
+        this.fallSpeed = 2;
         this.isRunning = false;
     }
 
@@ -73,6 +61,98 @@ class Game {
         this.isRunning = false;
     }
 
+    setNextShapes() {
+        const shapes = Object.keys(shapesDictionary);
+
+        for (let i = 0; i <= 3; i++) {
+            const randomIndex = Math.floor(Math.random() * shapes.length);
+            nextShapes.push(Object.keys(shapesDictionary)[randomIndex]);
+        }
+    }
+
+    createBoard() {
+        board = [];
+        for (let i = 0; i < this.canvas.height; i += unit) {
+            const row = [];
+
+            for (let j = 0; j < this.canvas.width; j += unit) {
+                row.push('');
+            }
+
+            board.push(row);
+        }
+    }
+
+    setShapeIntoBoard() {
+        const nextShape = nextShapes.pop();
+        const format = formats[nextShape];
+        const randomInitialPosition = Math.floor(Math.random() * 6);
+
+        for (let i = 0; i < format.length; i++) {
+            for (let j = 0; j < format[i].length; j++) {
+                const value = format[i][j];
+
+                if (value) {
+                    board[i][j + randomInitialPosition] = `f:${value}`;
+                }
+            }
+        }
+    }
+
+    drawBoard() {
+        const block = new Block();
+        const cleanedBoard = board.map(val => {
+            return val.map(v => {
+                if (v.includes('f:')) {
+                    return v.split('f:')[1];
+                }
+
+                if (v.includes('s:')) {
+                    return v.split('s:')[1];
+                }
+
+                return v;
+            })
+        })
+
+        for (let i = 0; i < cleanedBoard.length; i++) {
+            const row = cleanedBoard[i];
+
+            for (let j = 0; j < row.length; j++) {
+                const value = row[j];
+
+                if (value) {
+                    const color = colorDictionary[value];
+                    block.draw(color, this.ctx, j * unit, i * unit);
+                }
+            }
+        }
+    }
+
+    makePieceFall() {
+        for (let i = board.length - 1; i >= 0; i--) {
+            const row = board[i];
+
+            for (let j = 0; j < 10; j++) {
+                const value = row[j];
+
+                if (value.includes('f:')) {
+                    if (i === board.length - 1) {
+                        // is last row
+                        board[i][j] = `s:${value.split('f:')[1]}`;
+                    } else if (!board[i + 1][j].includes('s:')) {
+                        // is not last row and next row is empty
+                        board[i + 1][j] = value;
+                        board[i][j] = '';
+                    } else {
+                        // is not last row and next row is not empty
+                        board[i][j] = `s:${value.split('f:')[1]}`;
+                    }
+                }
+            }
+        }
+    }
+
     gameLoop() {
         if (!this.isRunning) {
             return;
@@ -81,12 +161,20 @@ class Game {
         // Clear the canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw the block
-        const block = new Block();
-        block.drawShape('t', this.ctx, 100, 0);
+        if (board.length === 0) {
+            this.createBoard();
+            this.setNextShapes();
+            this.setShapeIntoBoard();
+        }
 
-        // Request the next animation frame
-        requestAnimationFrame(() => this.gameLoop());
+        this.drawBoard();
+
+        this.makePieceFall();
+
+        // Set wait time
+        setTimeout(() => {
+            requestAnimationFrame(() => this.gameLoop());
+        }, 1000 / this.fallSpeed);
     }
 }
 
