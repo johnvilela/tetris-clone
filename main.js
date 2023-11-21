@@ -31,7 +31,7 @@ const formats = {
 }
 let board = [];
 const nextShapes = [];
-
+let currentPontuation = 0;
 
 class Block {
     draw(color, ctx, x, y) {
@@ -244,6 +244,11 @@ class Game {
         return false;
     }
 
+    updatePontuation() {
+        currentPontuation += 10;
+        document.getElementById('pontuation').innerHTML = `pontuation: <strong>${currentPontuation}</strong>`;
+    }
+
     removeFullRow() {
         for (let i = 0; i < board.length; i++) {
             const row = board[i];
@@ -253,6 +258,7 @@ class Game {
             if (!hasEmptyBlock) {
                 board.splice(i, 1);
                 board.unshift(new Array(10).fill(''));
+                this.updatePontuation();
             }
         }
     }
