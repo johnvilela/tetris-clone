@@ -50,6 +50,8 @@ class Game {
 
         this.fallSpeed = 2;
         this.isRunning = false;
+        this.pieces = 0;
+        this.rowsCompleted = 0;
     }
 
     start() {
@@ -134,6 +136,20 @@ class Game {
         }
     }
 
+    stopAllFallingPieces() {
+        for (let i = 0; i < board.length; i++) {
+            const row = board[i];
+
+            for (let j = 0; j < row.length; j++) {
+                const value = row[j];
+
+                if (value.includes('f:')) {
+                    board[i][j] = `s:${value.split('f:')[1]}`;
+                }
+            }
+        }
+    }
+
     makePieceFall() {
         for (let i = board.length - 1; i >= 0; i--) {
             const row = board[i];
@@ -143,15 +159,15 @@ class Game {
 
                 if (value.includes('f:')) {
                     if (i === board.length - 1) {
-                        // is last row
-                        board[i][j] = `s:${value.split('f:')[1]}`;
+                        // is last row;
+                        return this.stopAllFallingPieces();
                     } else if (!board[i + 1][j].includes('s:')) {
                         // is not last row and next row is empty
                         board[i + 1][j] = value;
                         board[i][j] = '';
                     } else {
                         // is not last row and next row is not empty
-                        board[i][j] = `s:${value.split('f:')[1]}`;
+                        return this.stopAllFallingPieces();
                     }
                 }
             }
@@ -214,12 +230,47 @@ class Game {
         return false;
     }
 
+    checkIfHasFullRow() {
+        for (let i = 0; i < board.length; i++) {
+            const row = board[i];
+
+            const hasEmptyBlock = row.some(val => val === '');
+
+            if (!hasEmptyBlock) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    removeFullRow() {
+        for (let i = 0; i < board.length; i++) {
+            const row = board[i];
+
+            const hasEmptyBlock = row.some(val => val === '');
+
+            if (!hasEmptyBlock) {
+                board.splice(i, 1);
+                board.unshift(new Array(10).fill(''));
+            }
+        }
+    }
+
+    graduallyIncreaseSpeed() {
+        if(this.pieces !== 0 && this.pieces % 10 === 0) {
+            this.fallSpeed = this.fallSpeed * 1.25;
+        }
+
+        if(this.rowsCompleted !== 0 && this.rowsCompleted % 2 === 0) {
+            this.fallSpeed = this.fallSpeed * 1.5;
+        }
+    }
+
     gameLoop() {
         if (!this.isRunning) {
             return;
         }
-
-        console.log(nextShapes);
 
         // Clear the canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -230,9 +281,15 @@ class Game {
             this.setShapeIntoBoard();
         }
 
+        if (this.checkIfHasFullRow()) {
+            this.removeFullRow();
+        }
+
         if (!this.checkIfHasFallingPiece()) {
             this.setShapeIntoBoard();
         }
+
+        this.graduallyIncreaseSpeed();
 
         this.drawBoard();
 
