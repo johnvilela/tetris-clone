@@ -56,6 +56,12 @@ main section table tr td {
     text-align: center;
 }
 
+footer {
+    width: 100%;
+    padding: 1rem;
+    text-align: center;
+}
+
 .btn {
     width: 100%;
     padding: 1rem;
