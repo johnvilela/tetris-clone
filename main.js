@@ -48,7 +48,7 @@ class Game {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
 
-        this.fallSpeed = 2;
+        this.fallSpeed = 1;
         this.isRunning = false;
     }
 
@@ -153,6 +153,46 @@ class Game {
         }
     }
 
+    moveShapeLeft() {
+        for (let i = 0; i < board.length; i++) {
+            const row = board[i];
+
+            for (let j = 1; j < row.length; j++) {
+                const value = row[j];
+
+                if (value.includes('f:') && row[j - 1] === '') {
+                    // Move the falling piece to the left
+                    board[i][j - 1] = value;
+                    board[i][j] = '';
+                }
+            }
+        }
+    }
+
+    moveShapeRight() {
+        for (let i = 0; i < board.length; i++) {
+            const row = board[i];
+
+            for (let j = row.length - 2; j >= 0; j--) {
+                const value = row[j];
+
+                if (value.includes('f:') && row[j + 1] === '') {
+                    // Move the falling piece to the right
+                    board[i][j + 1] = value;
+                    board[i][j] = '';
+                }
+            }
+        }
+    }
+
+    moveDownFaster() {
+        this.fallSpeed = this.fallSpeed * 1.25;
+    }
+
+    stopMoveDownFaster() {
+        this.fallSpeed = this.fallSpeed / 1.25;
+    }
+
     gameLoop() {
         if (!this.isRunning) {
             return;
@@ -188,6 +228,9 @@ function startGame() {
 
     document.getElementById('stop-btn').classList.add('block');
     document.getElementById('stop-btn').classList.remove('hidden');
+
+    window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('keyup', handleKeyup);
 }
 
 function stopGame() {
@@ -198,4 +241,29 @@ function stopGame() {
 
     document.getElementById('start-btn').classList.add('block');
     document.getElementById('start-btn').classList.remove('hidden');
+
+    window.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('keyup', handleKeyup);
+}
+
+function handleKeydown(event) {
+    switch (event.key) {
+        case 'ArrowLeft':
+            game.moveShapeLeft();
+            break;
+        case 'ArrowRight':
+            game.moveShapeRight();
+            break;
+        case 'ArrowDown':
+            game.moveDownFaster();
+            break;
+    }
+}
+
+function handleKeyup(event) {
+    switch (event.key) {
+        case 'ArrowDown':
+            game.stopMoveDownFaster();
+            break;
+    }
 }
